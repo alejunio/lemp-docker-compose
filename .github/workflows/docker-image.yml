@@ -10,7 +10,7 @@ jobs:
 
   build:
 
-    runs-on: debian:stretch-slim
+    runs-on: debian
 
     steps:
     - uses: actions/checkout@v2
