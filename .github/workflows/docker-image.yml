@@ -15,4 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build Imagem mysql
-      run: docker build ./mysql --tag mysql:$(date +%s)
+      run: docker build . --tag lemp:$(date +%s)
