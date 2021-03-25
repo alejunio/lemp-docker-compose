@@ -15,4 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build Imagem PHP
-      run: docker build php/Dockerfile --tag php:$(date +%s)
+      run: docker build ./php --tag php:$(date +%s)
