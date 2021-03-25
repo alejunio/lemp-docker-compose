@@ -4,15 +4,7 @@
 # PLEASE DO NOT EDIT IT DIRECTLY.
 #
 
-
-
 FROM debian:stretch-slim
-
-
-# Var Composer
-ENV COMPOSER_HOME /var/www/html/.composer/
-
-
 
 # prevent Debian's PHP packages from being installed
 # https://github.com/docker-library/php/pull/542
@@ -273,9 +265,8 @@ RUN set -eux; \
 # Override stop signal to stop process gracefully
 # https://github.com/php/php-src/blob/17baa87faddc2550def3ae7314236826bc1b1398/sapi/fpm/php-fpm.8.in#L163
 
-# Rodando Composer
-RUN curl -sS https://getcomposer.org/installer | php \
-    && mv composer.phar /usr/local/bin/composer
+
+
 
 STOPSIGNAL SIGQUIT
 
