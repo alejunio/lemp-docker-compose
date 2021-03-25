@@ -1,192 +1,44 @@
-#
-# NOTE: THIS DOCKERFILE IS GENERATED VIA "apply-templates.sh"
-#
-# PLEASE DO NOT EDIT IT DIRECTLY.
-#
+FROM alpine:3.13
+LABEL Maintainer="Tim de Pater <code@trafex.nl>" \
+      Description="Lightweight container with Nginx 1.18 & PHP 7.4 based on Alpine Linux."
 
-FROM alpine:3.12
+# Install packages and remove default server definition
+RUN apk --no-cache add php7 php7-fpm php7-opcache php7-mysqli php7-json php7-openssl php7-curl \
+    php7-zlib php7-xml php7-phar php7-intl php7-dom php7-xmlreader php7-ctype php7-session \
+    php7-mbstring php7-gd nginx supervisor curl && \
+    rm /etc/nginx/conf.d/default.conf
 
-# dependencies required for running "phpize"
-# these get automatically installed and removed by "docker-php-ext-*" (unless they're already installed)
-ENV PHPIZE_DEPS \
-		autoconf \
-		dpkg-dev dpkg \
-		file \
-		g++ \
-		gcc \
-		libc-dev \
-		make \
-		pkgconf \
-		re2c
+# Configure nginx
+COPY config/nginx.conf /etc/nginx/nginx.conf
 
-# persistent / runtime deps
-RUN apk add --no-cache \
-		ca-certificates \
-		curl \
-		tar \
-		xz \
-# https://github.com/docker-library/php/issues/494
-		openssl
+# Configure PHP-FPM
+COPY config/fpm-pool.conf /etc/php7/php-fpm.d/www.conf
+COPY config/php.ini /etc/php7/conf.d/custom.ini
 
-# ensure www-data user exists
-RUN set -eux; \
-	addgroup -g 82 -S www-data; \
-	adduser -u 82 -D -S -G www-data www-data
-# 82 is the standard uid/gid for "www-data" in Alpine
-# https://git.alpinelinux.org/aports/tree/main/apache2/apache2.pre-install?h=3.9-stable
-# https://git.alpinelinux.org/aports/tree/main/lighttpd/lighttpd.pre-install?h=3.9-stable
-# https://git.alpinelinux.org/aports/tree/main/nginx/nginx.pre-install?h=3.9-stable
+# Configure supervisord
+COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-ENV PHP_INI_DIR /usr/local/etc/php
-RUN set -eux; \
-	mkdir -p "$PHP_INI_DIR/conf.d"; \
-# allow running as an arbitrary user (https://github.com/docker-library/php/issues/743)
-	[ ! -d /var/www/html ]; \
-	mkdir -p /var/www/html; \
-	chown www-data:www-data /var/www/html; \
-	chmod 777 /var/www/html
+# Setup document root
+RUN mkdir -p /var/www/html
 
-# Apply stack smash protection to functions using local buffers and alloca()
-# Make PHP's main executable position-independent (improves ASLR security mechanism, and has no performance impact on x86_64)
-# Enable optimization (-O2)
-# Enable linker optimization (this sorts the hash buckets to improve cache locality, and is non-default)
-# https://github.com/docker-library/php/issues/272
-# -D_LARGEFILE_SOURCE and -D_FILE_OFFSET_BITS=64 (https://www.php.net/manual/en/intro.filesystem.php)
-ENV PHP_CFLAGS="-fstack-protector-strong -fpic -fpie -O2 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
-ENV PHP_CPPFLAGS="$PHP_CFLAGS"
-ENV PHP_LDFLAGS="-Wl,-O1 -pie"
+# Make sure files/folders needed by the processes are accessable when they run under the nobody user
+RUN chown -R nobody.nobody /var/www/html && \
+  chown -R nobody.nobody /run && \
+  chown -R nobody.nobody /var/lib/nginx && \
+  chown -R nobody.nobody /var/log/nginx
 
-ENV GPG_KEYS 42670A7FE4D0441C8E4632349E4FDC074A4EF02D 5A52880781F755608BF815FC910DEB46F53EA312
+# Switch to use a non-root user from here on
+USER nobody
 
-ENV PHP_VERSION 7.4.16
-ENV PHP_URL="https://www.php.net/distributions/php-7.4.16.tar.xz" PHP_ASC_URL="https://www.php.net/distributions/php-7.4.16.tar.xz.asc"
-ENV PHP_SHA256="1c16cefaf88ded4c92eed6a8a41eb682bb2ef42429deb55f1c4ba159053fb98b"
+# Add application
+WORKDIR /var/www/html
+COPY --chown=nobody src/ /var/www/html/
 
-RUN set -eux; \
-	\
-	apk add --no-cache --virtual .fetch-deps gnupg; \
-	\
-	mkdir -p /usr/src; \
-	cd /usr/src; \
-	\
-	curl -fsSL -o php.tar.xz "$PHP_URL"; \
-	\
-	if [ -n "$PHP_SHA256" ]; then \
-		echo "$PHP_SHA256 *php.tar.xz" | sha256sum -c -; \
-	fi; \
-	\
-	if [ -n "$PHP_ASC_URL" ]; then \
-		curl -fsSL -o php.tar.xz.asc "$PHP_ASC_URL"; \
-		export GNUPGHOME="$(mktemp -d)"; \
-		for key in $GPG_KEYS; do \
-			gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
-		done; \
-		gpg --batch --verify php.tar.xz.asc php.tar.xz; \
-		gpgconf --kill all; \
-		rm -rf "$GNUPGHOME"; \
-	fi; \
-	\
-	apk del --no-network .fetch-deps
+# Expose the port nginx is reachable on
+EXPOSE 8080
 
-COPY docker-php-source /usr/local/bin/
+# Let supervisord start nginx & php-fpm
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
-RUN set -eux; \
-	apk add --no-cache --virtual .build-deps \
-		$PHPIZE_DEPS \
-		argon2-dev \
-		coreutils \
-		curl-dev \
-		libedit-dev \
-		libsodium-dev \
-		libxml2-dev \
-		linux-headers \
-		oniguruma-dev \
-		openssl-dev \
-		sqlite-dev \
-	; \
-	\
-	export CFLAGS="$PHP_CFLAGS" \
-		CPPFLAGS="$PHP_CPPFLAGS" \
-		LDFLAGS="$PHP_LDFLAGS" \
-	; \
-	docker-php-source extract; \
-	cd /usr/src/php; \
-	gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
-	./configure \
-		--build="$gnuArch" \
-		--with-config-file-path="$PHP_INI_DIR" \
-		--with-config-file-scan-dir="$PHP_INI_DIR/conf.d" \
-		\
-# make sure invalid --configure-flags are fatal errors instead of just warnings
-		--enable-option-checking=fatal \
-		\
-# https://github.com/docker-library/php/issues/439
-		--with-mhash \
-		\
-# https://github.com/docker-library/php/issues/822
-		--with-pic \
-		\
-# --enable-ftp is included here because ftp_ssl_connect() needs ftp to be compiled statically (see https://github.com/docker-library/php/issues/236)
-		--enable-ftp \
-# --enable-mbstring is included here because otherwise there's no way to get pecl to use it properly (see https://github.com/docker-library/php/issues/195)
-		--enable-mbstring \
-# --enable-mysqlnd is included here because it's harder to compile after the fact than extensions are (since it's a plugin for several extensions, not an extension in itself)
-		--enable-mysqlnd \
-# https://wiki.php.net/rfc/argon2_password_hash (7.2+)
-		--with-password-argon2 \
-# https://wiki.php.net/rfc/libsodium
-		--with-sodium=shared \
-# always build against system sqlite3 (https://github.com/php/php-src/commit/6083a387a81dbbd66d6316a3a12a63f06d5f7109)
-		--with-pdo-sqlite=/usr \
-		--with-sqlite3=/usr \
-		\
-		--with-curl \
-		--with-libedit \
-		--with-openssl \
-		--with-zlib \
-		\
-# in PHP 7.4+, the pecl/pear installers are officially deprecated (requiring an explicit "--with-pear")
-		--with-pear \
-		\
-# bundled pcre does not support JIT on s390x
-# https://manpages.debian.org/stretch/libpcre3-dev/pcrejit.3.en.html#AVAILABILITY_OF_JIT_SUPPORT
-		$(test "$gnuArch" = 's390x-linux-musl' && echo '--without-pcre-jit') \
-		\
-		${PHP_EXTRA_CONFIGURE_ARGS:-} \
-	; \
-	make -j "$(nproc)"; \
-	find -type f -name '*.a' -delete; \
-	make install; \
-	find /usr/local/bin /usr/local/sbin -type f -perm +0111 -exec strip --strip-all '{}' + || true; \
-	make clean; \
-	\
-# https://github.com/docker-library/php/issues/692 (copy default example "php.ini" files somewhere easily discoverable)
-	cp -v php.ini-* "$PHP_INI_DIR/"; \
-	\
-	cd /; \
-	docker-php-source delete; \
-	\
-	runDeps="$( \
-		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
-			| tr ',' '\n' \
-			| sort -u \
-			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-	)"; \
-	apk add --no-cache $runDeps; \
-	\
-	apk del --no-network .build-deps; \
-	\
-# update pecl channel definitions https://github.com/docker-library/php/issues/443
-	pecl update-channels; \
-	rm -rf /tmp/pear ~/.pearrc; \
-	\
-# smoke test
-	php --version
-
-COPY docker-php-ext-* docker-php-entrypoint /usr/local/bin/
-
-# sodium was built as a shared module (so that it can be replaced later if so desired), so let's enable it too (https://github.com/docker-library/php/issues/598)
-RUN docker-php-ext-enable sodium
-
-ENTRYPOINT ["docker-php-entrypoint"]
-CMD ["php", "-a"]
+# Configure a healthcheck to validate that everything is up&running
+HEALTHCHECK --timeout=10s CMD curl --silent --fail http://127.0.0.1:8080/fpm-ping
