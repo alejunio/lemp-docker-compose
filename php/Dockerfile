@@ -265,7 +265,19 @@ RUN set -eux; \
 # Override stop signal to stop process gracefully
 # https://github.com/php/php-src/blob/17baa87faddc2550def3ae7314236826bc1b1398/sapi/fpm/php-fpm.8.in#L163
 
-
+RUN requirements="libpng++-dev libzip-dev libmcrypt-dev libmcrypt4 libcurl3-dev libfreetype6 libjpeg-turbo8 libjpeg-turbo8-dev libfreetype6-dev libicu-dev libxslt1-dev unzip" \
+    && apt-get update \
+    && apt-get install -y $requirements \
+    && rm -rf /var/lib/apt/lists/* \
+    && docker-php-ext-install pdo_mysql \
+    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+    && docker-php-ext-install gd \
+    && docker-php-ext-install mbstring \
+    && docker-php-ext-install zip \
+    && docker-php-ext-install intl \
+    && docker-php-ext-install xsl \
+    && docker-php-ext-install soap \
+    && docker-php-ext-install bcmath
 
 
 STOPSIGNAL SIGQUIT
