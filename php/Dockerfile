@@ -1,6 +1,6 @@
 FROM alpine:3.13
-LABEL Maintainer="Tim de Pater <code@trafex.nl>" \
-      Description="Lightweight container with Nginx 1.18 & PHP 7.4 based on Alpine Linux."
+LABEL Maintainer="Alex Junio <contato@alejunio.cloud>" \
+      Description="PHP-FPM"
 
 # Install packages and remove default server definition
 RUN apk --no-cache add php7 php7-fpm php7-opcache php7-mysqli php7-json php7-openssl php7-curl \
@@ -37,4 +37,4 @@ EXPOSE 9000
 # Let supervisord start nginx & php-fpm
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 # Configure a healthcheck to validate that everything is up&running
-HEALTHCHECK --timeout=10s CMD curl --silent --fail http://127.0.0.1:8080/fpm-ping
+HEALTHCHECK --timeout=10s CMD curl --silent --fail http://127.0.0.1:9000/fpm-ping
