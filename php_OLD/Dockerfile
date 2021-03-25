@@ -4,7 +4,7 @@
 # PLEASE DO NOT EDIT IT DIRECTLY.
 #
 
-FROM debian:buster-slim
+FROM debian:stretch-slim
 
 # prevent Debian's PHP packages from being installed
 # https://github.com/docker-library/php/pull/542
@@ -102,6 +102,16 @@ COPY docker-php-source /usr/local/bin/
 RUN set -eux; \
 	\
 	savedAptMark="$(apt-mark showmanual)"; \
+	sed -e 's/stretch/buster/g' /etc/apt/sources.list > /etc/apt/sources.list.d/buster.list; \
+	{ \
+		echo 'Package: *'; \
+		echo 'Pin: release n=buster*'; \
+		echo 'Pin-Priority: -10'; \
+		echo; \
+		echo 'Package: libargon2*'; \
+		echo 'Pin: release n=buster*'; \
+		echo 'Pin-Priority: 990'; \
+	} > /etc/apt/preferences.d/argon2-buster; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
 		libargon2-dev \
@@ -206,9 +216,6 @@ COPY docker-php-ext-* docker-php-entrypoint /usr/local/bin/
 # sodium was built as a shared module (so that it can be replaced later if so desired), so let's enable it too (https://github.com/docker-library/php/issues/598)
 RUN docker-php-ext-enable sodium
 
-# temporary "freetype-config" workaround for https://github.com/docker-library/php/issues/865 (https://bugs.php.net/bug.php?id=76324)
-RUN { echo '#!/bin/sh'; echo 'exec pkg-config "$@" freetype2'; } > /usr/local/bin/freetype-config && chmod +x /usr/local/bin/freetype-config
-
 ENTRYPOINT ["docker-php-entrypoint"]
 WORKDIR /var/www/html
 
@@ -248,11 +255,22 @@ RUN set -eux; \
 		echo; \
 		echo '[www]'; \
 		echo 'listen = 9000'; \
+        echo ' php_admin_value[memory_limit]       = 2048M'; \
+        echo ' php_value[max_execution_time]       = 1800 '; \
+        echo ' php_admin_value[upload_max_filesize] = 4G '; \
+        echo ' php_admin_value[post_max_size]      = 4.2G '; \
+        echo ' php_admin_value[max_input_time]     = 3600 '; \
+        echo ' php_admin_value[max_execution_time] = 1800  '; \
 	} | tee php-fpm.d/zz-docker.conf
-
 # Override stop signal to stop process gracefully
 # https://github.com/php/php-src/blob/17baa87faddc2550def3ae7314236826bc1b1398/sapi/fpm/php-fpm.8.in#L163
+
+
+
+
 STOPSIGNAL SIGQUIT
 
 EXPOSE 9000
 CMD ["php-fpm"]
+
+
