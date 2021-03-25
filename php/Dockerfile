@@ -16,16 +16,16 @@ COPY config/php.ini /etc/php7/conf.d/custom.ini
 # Setup document root
 RUN mkdir -p /var/www/html
 
-# Make sure files/folders needed by the processes are accessable when they run under the www-data user
-RUN chown -R www-data.www-data /var/www/html && \
-  chown -R www-data.www-data /run 
+# Make sure files/folders needed by the processes are accessable when they run under the nobody user
+RUN chown -R nobody.nobody /var/www/html && \
+  chown -R nobody.nobody /run 
 
 # Switch to use a non-root user from here on
-USER www-data
+USER nobody
 
 # Add application
 WORKDIR /var/www/html
-COPY --chown=www-data src/ /var/www/html/
+COPY --chown=nobody src/ /var/www/html/
 
 # Expose the port nginx is reachable on
 
