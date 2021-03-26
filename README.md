@@ -5,6 +5,8 @@
 ## Ambiente de desenvolvimento PHP com Nginx e MySQL.
 
 ### Requisitos
+> Docker
+> Docker Compose
 
 
 
