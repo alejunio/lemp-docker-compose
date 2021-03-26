@@ -14,7 +14,7 @@ services:
       - ./app:/var/www/html
 
   php:
-    image: alejunio/php74:1.1
+    image: alejunio/php74:latest
     ports:
       - "9000:9000"
     volumes:
