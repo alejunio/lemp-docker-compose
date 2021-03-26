@@ -26,6 +26,7 @@ docker-compose up -d
 
 ### Estrutura
 
+```shell
 .
 ├── LICENSE
 ├── README.md
@@ -42,3 +43,4 @@ docker-compose up -d
     ├── 20-envsubst-on-templates.sh
     ├── Dockerfile
     └── docker-entrypoint.sh
+```
