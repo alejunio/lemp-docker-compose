@@ -1,45 +1,65 @@
 version: "3.8"
 services:
+
   web:
-    image: nginx
+    image: nginx:alpine
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - php
+      - mysqlserver
     links:
       - php
-     # - dbhost
+    restart: always
     volumes:
       - ./conf/app.conf:/etc/nginx/conf.d/app.conf
       - ./app:/var/www/html
-
-  php:
-    image: alejunio/php74:latest
-    ports:
-      - "9000:9000"
-    volumes:
-      - ./app:/var/www/html
-    links:
-      - dbhost
       
 
-  dbhost:
+  php:
+    image: php:7.4-fpm
+    ports:
+      - "9000:9000"
+    restart: always
+    volumes:
+      - ./app:/var/www/html
+      - ./conf/php.ini:/usr/local/etc/php/php.ini 
+    links:
+      - mysqlserver
+      
+
+  mysqlserver:
     #build: mysql
-    image: mysql:5.7
+    image: mysql:8.0
+    command: [ "--default-authentication-plugin=mysql_native_password" ]
     ports:
       - "3306:3306"
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: "${password_root}"
-      MYSQL_DATABASE: "${database}"
-      MYSQL_USER: "${dbuser}"
-      MYSQL_PASSWORD: "${password}"
+      MYSQL_ROOT_PASSWORD: "${PASSWORD_ROOT}"
+      MYSQL_DATABASE: "${DATABASE}"
+      MYSQL_USER: "${DBUSER}"
+      MYSQL_PASSWORD: "${DBPASSWORD}"
     volumes:
-      - ./db_conf:/var/lib/mysql
+      - ./db_dados:/var/lib/mysql
 
+
+  phpmyadmin:
+    image: phpmyadmin:apache
+    restart: always
+    ports:
+      - "8082:80"
+    environment:
+      - PMA_ARBITRARY=1
+    depends_on:
+      - mysqlserver
+    links:
+      - mysqlserver
 
 volumes:
   app:
   conf:
-  db_conf:
+  db_dados:
  
   
