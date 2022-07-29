@@ -31,9 +31,11 @@ docker-compose -f docker-compose-ssl.yml up -d
 Após inicializar a stack, acesse o Nginx Proxy Manager no navegador através da URL abaixo
 ```shell
 http:ip_servidor:81
-```
 
 Email:    admin@example.com
 Password: changeme
+```
+
+
 
 
