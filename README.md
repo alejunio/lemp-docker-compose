@@ -10,7 +10,7 @@
 
 
 
-### Deploy Stack
+### Deploy Stack 
 Para inicializar a Stack execute os passos abaixo
 
 #### Clone o Repositório
@@ -18,9 +18,22 @@ Para inicializar a Stack execute os passos abaixo
 git clone https://github.com/alejunio/lemp-docker-compose.git stack && cd stack
 ```
 
-#### Depploy Stack
+#### Iniciando a Stack em máquina local
 ```shell
-docker-compose up -d
+docker-compose -f docker-compose-local.yml up -d 
 ```
+
+#### Iniciando a Stack em VPS para utilizar SSL
+```shell
+docker-compose -f docker-compose-ssl.yml up -d 
+```
+
+Após inicializar a stack, acesse o Nginx Proxy Manager no navegador através da URL abaixo
+```shell
+http:ip_servidor:81
+```
+
+Email:    admin@example.com
+Password: changeme
 
 
