@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build Stack
-      run: docker-compose up -d 
+      run: docker compose -f docker-compose-local.yml up -d 
   #  - name: Build Imagem PHP
   #    run: docker build php --tag php:$(date +%s)
     
