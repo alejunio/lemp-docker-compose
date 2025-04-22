@@ -1,4 +1,4 @@
-# 🐳 Ambiente Docker Local para Aplicações PHP + NGINX + MySQL
+# 🐳 LEMP - Ambiente Docker Local para Aplicações PHP + NGINX + MySQL
 
 Este ambiente foi criado para facilitar o desenvolvimento local de aplicações PHP utilizando NGINX, PHP-FPM 8.1, MySQL 8 e PHPMyAdmin.
 
