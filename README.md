@@ -40,10 +40,11 @@ PASSWORD_ROOT=suasenhasegura
 DATABASE=meubanco
 DBUSER=usuario
 DBPASSWORD=senhadousuario
-
+```
 
 ### 2. Suba o ambiente
 
 
 ```env
 docker-compose -f docker-compose-local.yml up -d
+```
