@@ -6,11 +6,11 @@ Este ambiente foi criado para facilitar o desenvolvimento local de aplicações 
 
 ## ⚙️ Tecnologias Utilizadas
 
-- **NGINX (alpine)** — Servidor web leve e eficiente
-- **PHP-FPM 8.1** — Interprete PHP atualizado
+- **NGINX (alpine)** — Servidor web 
+- **PHP-FPM 8.1** — Interpretador PHP
 - **MySQL 8.0** — Banco de dados relacional
 - **PHPMyAdmin** — Interface web para administração do MySQL
-- **Docker Compose 3.8** — Orquestração multi-container
+- **Docker Compose 3.8** — Orquestração
 
 ---
 
@@ -21,7 +21,7 @@ Este ambiente foi criado para facilitar o desenvolvimento local de aplicações 
 
 ✅ **Atualização para PHP 8.1**  
 ✅ **Uso de `fastcgi.conf` + `fastcgi_split_path_info`** para melhor compatibilidade com frameworks modernos  
-✅ **Volumes nomeados (`app_data`, `mysql_data`)** para maior segurança e performance  
+✅ **Volumes nomeados (`app`, `mysql_data`)** para maior segurança e performance  
 ✅ **Healthchecks** para garantir que os serviços estejam funcionando corretamente  
 ✅ **`client_max_body_size`** configurado para uploads maiores  
 ✅ **Bloqueio de execução de arquivos PHP em diretórios públicos**  
@@ -41,3 +41,9 @@ DATABASE=meubanco
 DBUSER=usuario
 DBPASSWORD=senhadousuario
 
+
+### 2. Suba o ambiente
+
+
+```env
+docker-compose -f docker-compose-local.yml up -d
