@@ -1,4 +1,5 @@
 version: "3.8"
+
 services:
 
   web:
@@ -9,28 +10,35 @@ services:
     depends_on:
       - php
       - mysqlserver
-    links:
-      - php
     restart: always
     volumes:
       - ./conf/app.conf:/etc/nginx/conf.d/app.conf
       - ./app:/var/www/html
-      
+    networks:
+      - webnet
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   php:
-    image: php:7.4-fpm
-    ports:
-      - "9000:9000"
+    image: php:8.1-fpm
     restart: always
     volumes:
       - ./app:/var/www/html
-      - ./conf/php.ini:/usr/local/etc/php/php.ini 
-    links:
+      - ./conf/php.ini:/usr/local/etc/php/php.ini
+    depends_on:
       - mysqlserver
-      
+    networks:
+      - webnet
+    healthcheck:
+      test: ["CMD", "php", "-v"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   mysqlserver:
-    #build: mysql
     image: mysql:8.0
     command: [ "--default-authentication-plugin=mysql_native_password" ]
     ports:
@@ -42,8 +50,16 @@ services:
       MYSQL_USER: "${DBUSER}"
       MYSQL_PASSWORD: "${DBPASSWORD}"
     volumes:
-      - ./db_dados:/var/lib/mysql
-
+      - mysql_data:/var/lib/mysql
+    tmpfs:
+      - /tmp
+    networks:
+      - webnet
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p${PASSWORD_ROOT} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   phpmyadmin:
     image: phpmyadmin:apache
@@ -54,12 +70,17 @@ services:
       - PMA_ARBITRARY=1
     depends_on:
       - mysqlserver
-    links:
-      - mysqlserver
+    networks:
+      - webnet
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
+  mysql_data:
   app:
-  conf:
-  db_dados:
- 
-  
+
+networks:
+  webnet:
